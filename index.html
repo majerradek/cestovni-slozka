@@ -1,0 +1,1131 @@
+<!doctype html>
+<html lang="cs">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#0b7285">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Cestovní složka">
+<meta name="robots" content="noindex, nofollow">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="icon-180.png">
+<title>Cestovní složka</title>
+</head>
+<body>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700;12..96,800&family=Instrument+Sans:wght@400;500;600&family=JetBrains+Mono:wght@500;700&display=swap">
+<style>
+/* Layout: one travel-folder column; summary (hero + day plan) first, then a section per booking type, boarding-pass styling for flights */
+:root {
+  --bg: #f2f6f5;
+  --surface: #ffffff;
+  --surface-2: #e6efed;
+  --fg: #0f2a2e;
+  --muted: #4d6a6e;
+  --line: #cfdedb;
+  --accent: #0b7285;
+  --accent-soft: #d3ecef;
+  --spice: #b86b12;
+  --spice-soft: #f7e6cf;
+  --ok: #2b8a3e;
+  --ok-soft: #dcf1e0;
+  --warn: #c2410c;
+  --warn-soft: #fde4d6;
+  --font-display: "Bricolage Grotesque", "Avenir Next", "Segoe UI", sans-serif;
+  --font-body: "Instrument Sans", "Helvetica Neue", Arial, sans-serif;
+  --font-data: "JetBrains Mono", ui-monospace, "SF Mono", Menlo, monospace;
+  --radius: 14px;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #0a1a1d; --surface: #11262a; --surface-2: #173238; --fg: #e3efee; --muted: #93b0b3;
+    --line: #22434a; --accent: #4fc3d1; --accent-soft: #123f47; --spice: #eaa94f; --spice-soft: #3b2a12;
+    --ok: #69d184; --ok-soft: #14361f; --warn: #ff8f5e; --warn-soft: #43200f; color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #0a1a1d; --surface: #11262a; --surface-2: #173238; --fg: #e3efee; --muted: #93b0b3;
+  --line: #22434a; --accent: #4fc3d1; --accent-soft: #123f47; --spice: #eaa94f; --spice-soft: #3b2a12;
+  --ok: #69d184; --ok-soft: #14361f; --warn: #ff8f5e; --warn-soft: #43200f; color-scheme: dark;
+}
+* { box-sizing: border-box; }
+[hidden] { display: none !important; }
+html, body { margin: 0; }
+body { background: var(--bg); color: var(--fg); font-family: var(--font-body); font-size: 15px; line-height: 1.55; }
+.wrap { max-width: 1080px; margin: 0 auto; padding-inline: 16px; }
+h1, h2, h3 { font-family: var(--font-display); text-wrap: balance; margin: 0; line-height: 1.15; }
+a { color: var(--accent); }
+.mono { font-family: var(--font-data); font-variant-numeric: tabular-nums; }
+.muted { color: var(--muted); }
+.eyebrow { font-size: 12px; letter-spacing: .12em; text-transform: uppercase; color: var(--muted); font-weight: 600; }
+
+/* Hero */
+.hero { padding-block: 40px 28px; display: grid; gap: 24px; grid-template-columns: minmax(0, 1fr) auto; align-items: end; }
+.hero h1 { font-size: clamp(44px, 9vw, 92px); font-weight: 800; letter-spacing: -.03em; }
+.hero h1 span { color: var(--accent); }
+.hero .dates { font-family: var(--font-data); font-size: 15px; margin-top: 10px; display: flex; flex-wrap: wrap; gap: 6px 14px; }
+.count { text-align: right; }
+.count b { font-family: var(--font-display); font-size: clamp(48px, 8vw, 80px); font-weight: 800; color: var(--spice); line-height: 1; display: block; letter-spacing: -.02em; }
+.facts { display: flex; flex-wrap: wrap; gap: 8px; padding-bottom: 28px; }
+.fact { background: var(--surface); border: 1px solid var(--line); border-radius: 999px; padding: 6px 14px; font-size: 13.5px; }
+.fact b { font-weight: 600; }
+
+/* Nav */
+nav.tabs { position: sticky; top: env(safe-area-inset-top, 0px); z-index: 5; background: var(--bg); border-bottom: 1px solid var(--line); }
+nav.tabs .wrap { display: flex; gap: 4px; overflow-x: auto; padding-block: 8px; scrollbar-width: none; }
+nav.tabs a { white-space: nowrap; text-decoration: none; color: var(--muted); font-weight: 600; font-size: 14px; padding: 7px 12px; border-radius: 999px; }
+nav.tabs a:hover, nav.tabs a:focus-visible { background: var(--surface-2); color: var(--fg); outline: none; }
+nav.tabs a .n { font-family: var(--font-data); font-size: 11px; color: var(--accent); margin-left: 4px; }
+
+section { padding-block: 40px 8px; scroll-margin-top: 60px; }
+.sec-head { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; flex-wrap: wrap; margin-bottom: 18px; }
+.sec-head h2 { font-size: 30px; font-weight: 700; letter-spacing: -.01em; }
+.sec-head p { margin: 0; color: var(--muted); max-width: 60ch; }
+
+.empty { border: 1.5px dashed var(--line); border-radius: var(--radius); padding: 22px; color: var(--muted); background: transparent; }
+.empty b { color: var(--fg); }
+
+/* Day plan */
+.days { display: grid; gap: 0; background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); overflow: hidden; }
+.day { display: grid; grid-template-columns: 112px minmax(0, 1fr); gap: 16px; padding: 14px 18px; border-top: 1px solid var(--line); }
+.day:first-child { border-top: 0; }
+.day .d { font-family: var(--font-data); font-size: 13px; color: var(--muted); }
+.day .d b { display: block; font-size: 16px; color: var(--fg); }
+.day.quiet { padding-block: 10px; }
+.day.quiet .ev-list { color: var(--muted); font-size: 14px; align-self: center; }
+.ev-list { display: grid; gap: 8px; min-width: 0; }
+.ev { display: grid; grid-template-columns: 52px 22px minmax(0, 1fr); gap: 8px; align-items: baseline; }
+.ev .t { font-family: var(--font-data); font-size: 13px; color: var(--muted); }
+.ev .k { font-size: 11px; font-weight: 700; text-align: center; border-radius: 6px; padding: 1px 0; font-family: var(--font-data); }
+.k.fl { background: var(--accent-soft); color: var(--accent); }
+.k.st { background: var(--spice-soft); color: var(--spice); }
+.k.ex { background: var(--ok-soft); color: var(--ok); }
+.k.car { background: var(--surface-2); color: var(--fg); }
+.ev .s { color: var(--muted); font-size: 13.5px; }
+
+/* Boarding passes */
+.passes { display: grid; gap: 18px; }
+.pass { background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); display: grid; grid-template-columns: minmax(0, 1fr) 210px; overflow: hidden; }
+.pass-main { padding: 20px 22px; min-width: 0; }
+.pass-stub { border-left: 2px dashed var(--line); padding: 20px 18px; background: var(--surface-2); display: grid; gap: 12px; align-content: start; }
+.pass-top { display: flex; justify-content: space-between; align-items: center; gap: 10px; flex-wrap: wrap; margin-bottom: 14px; }
+.dir { font-family: var(--font-display); font-weight: 700; font-size: 22px; }
+.route { font-family: var(--font-data); font-weight: 700; font-size: 15px; color: var(--accent); }
+.seg { display: grid; grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr); gap: 12px; align-items: center; padding-block: 10px; }
+.seg .end .code { font-family: var(--font-data); font-weight: 700; font-size: 30px; line-height: 1; letter-spacing: .02em; }
+.seg .end .when { font-family: var(--font-data); font-size: 13.5px; margin-top: 6px; }
+.seg .end .when b { font-size: 17px; }
+.seg .end .city { font-size: 13px; color: var(--muted); }
+.seg .end.to { text-align: right; }
+.seg .mid { text-align: center; font-size: 12px; color: var(--muted); font-family: var(--font-data); min-width: 110px; }
+.seg .mid .line { height: 2px; background: var(--line); margin: 6px 0; position: relative; }
+.seg .mid .line::after { content: "✈"; position: absolute; left: 50%; top: 50%; transform: translate(-50%, -54%); background: var(--surface); padding: 0 6px; color: var(--accent); font-size: 14px; }
+.seg .mid .fn { color: var(--fg); font-weight: 700; }
+.layover { display: flex; align-items: center; gap: 10px; font-size: 13px; color: var(--spice); font-weight: 600; padding-block: 4px; }
+.layover::before, .layover::after { content: ""; flex: 1; border-top: 1px dashed var(--line); }
+.kv { display: grid; gap: 2px; }
+.kv span { font-size: 11px; letter-spacing: .1em; text-transform: uppercase; color: var(--muted); font-weight: 600; }
+.kv b { font-family: var(--font-data); font-size: 15px; overflow-wrap: anywhere; }
+.copy { font: inherit; font-size: 12px; border: 1px solid var(--line); background: var(--surface); color: var(--fg); border-radius: 8px; padding: 3px 9px; cursor: pointer; justify-self: start; }
+.copy:hover, .copy:focus-visible { border-color: var(--accent); outline: none; }
+.note { font-size: 13.5px; color: var(--muted); margin-top: 8px; }
+
+/* Generic cards */
+.cards { display: grid; gap: 14px; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); }
+.card { background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); padding: 18px 20px; display: grid; gap: 10px; align-content: start; min-width: 0; }
+.card h3 { font-size: 19px; font-weight: 700; }
+.card .meta { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px 14px; }
+.pill { display: inline-block; font-size: 12px; font-weight: 600; border-radius: 999px; padding: 2px 10px; }
+.pill.ok { background: var(--ok-soft); color: var(--ok); }
+.pill.warn { background: var(--warn-soft); color: var(--warn); }
+.pill.spice { background: var(--spice-soft); color: var(--spice); }
+.pill.plain { background: var(--surface-2); color: var(--muted); }
+
+/* Map + where we sleep */
+.mapgrid { display: grid; grid-template-columns: minmax(0, 400px) minmax(0, 1fr); gap: 22px; align-items: start; margin-bottom: 22px; }
+.map { position: relative; aspect-ratio: 520 / 870; max-width: 100%; background: var(--accent-soft); border: 1px solid var(--line); border-radius: var(--radius); overflow: visible; }
+.map svg { position: absolute; inset: 0; width: 100%; height: 100%; display: block; border-radius: var(--radius); }
+.map .land { fill: var(--surface); stroke: var(--accent); stroke-width: 2; stroke-linejoin: round; }
+.map .sea { fill: var(--accent); opacity: .55; font-family: var(--font-body); font-size: 15px; font-style: italic; letter-spacing: .08em; }
+.map .grid { stroke: var(--accent); stroke-width: .6; opacity: .25; stroke-dasharray: 3 5; }
+.map .gridlbl { fill: var(--accent); opacity: .6; font-family: var(--font-data); font-size: 11px; }
+.mk { position: absolute; transform: translate(-50%, -50%); border: 0; padding: 0; cursor: pointer; font: inherit; display: grid; place-items: center; z-index: 2; }
+.mk:focus-visible { outline: 3px solid var(--fg); outline-offset: 2px; }
+.mk.stay { width: 30px; height: 30px; border-radius: 50% 50% 50% 4px; background: var(--spice); color: #fff; font-family: var(--font-data); font-weight: 700; font-size: 14px; box-shadow: 0 2px 6px rgba(0,0,0,.25); transform: translate(-15%, -85%) rotate(-45deg); }
+.mk.stay span { transform: rotate(45deg); }
+.mk.stay.pending { background: var(--surface); color: var(--spice); border: 2px solid var(--spice); }
+.mk.ex { width: 16px; height: 16px; border-radius: 50%; background: var(--ok); border: 2px solid var(--surface); }
+.mk.place { background: transparent; color: var(--fg); font-size: 12px; font-weight: 600; gap: 2px; grid-auto-flow: column; white-space: nowrap; }
+.mk.place i { width: 8px; height: 8px; border-radius: 50%; background: var(--fg); display: inline-block; font-style: normal; }
+.mk.place.airport i { width: auto; height: auto; background: none; color: var(--accent); font-size: 16px; }
+.mk.active.stay { box-shadow: 0 0 0 4px var(--spice-soft), 0 2px 6px rgba(0,0,0,.25); }
+.tip { position: absolute; z-index: 4; width: 250px; max-width: 80vw; background: var(--surface); border: 1px solid var(--line); border-radius: 12px; box-shadow: 0 10px 30px rgba(0,0,0,.18); padding: 12px 14px; font-size: 13.5px; pointer-events: auto; }
+.tip h4 { margin: 0 0 4px; font-family: var(--font-display); font-size: 16px; }
+.tip .row { display: flex; justify-content: space-between; gap: 10px; border-top: 1px solid var(--line); padding-top: 5px; margin-top: 5px; }
+.tip .row span:first-child { color: var(--muted); }
+.tip .row span:last-child { font-family: var(--font-data); text-align: right; }
+.tip a { display: inline-block; margin-top: 8px; }
+.nights { display: grid; gap: 0; background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); overflow: hidden; }
+.night { display: grid; grid-template-columns: 30px minmax(0, 1fr) auto; gap: 12px; align-items: center; padding: 12px 16px; border-top: 1px solid var(--line); text-align: left; background: none; border-left: 0; border-right: 0; border-bottom: 0; font: inherit; color: inherit; width: 100%; }
+.night:first-child { border-top: 0; }
+button.night { cursor: pointer; }
+button.night:hover, button.night:focus-visible { background: var(--surface-2); outline: none; }
+.night .b { width: 26px; height: 26px; border-radius: 50%; display: grid; place-items: center; font-family: var(--font-data); font-weight: 700; font-size: 13px; background: var(--spice); color: #fff; }
+.night .b.gap { background: var(--warn-soft); color: var(--warn); }
+.night .b.fly { background: var(--accent-soft); color: var(--accent); }
+.night .w { font-family: var(--font-data); font-size: 12.5px; color: var(--muted); text-align: right; white-space: nowrap; }
+.night.gaprow b { color: var(--warn); }
+.night .s { font-size: 13px; color: var(--muted); }
+
+/* Stay detail */
+.stays { display: grid; gap: 18px; }
+.stay { background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); overflow: hidden; scroll-margin-top: 70px; }
+.stay-head { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; gap: 14px; align-items: start; padding: 18px 20px 14px; }
+.stay-head .b { width: 34px; height: 34px; border-radius: 50%; background: var(--spice); color: #fff; display: grid; place-items: center; font-family: var(--font-data); font-weight: 700; }
+.stay-head h3 { font-size: 22px; font-weight: 700; }
+.stars { color: var(--spice); letter-spacing: 1px; font-size: 14px; }
+.score { font-size: 13.5px; color: var(--muted); }
+.score b { background: var(--accent); color: var(--surface); border-radius: 6px 6px 6px 0; padding: 1px 6px; font-family: var(--font-data); margin-right: 4px; }
+.stay-dates { display: grid; grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr); gap: 12px; align-items: center; padding: 14px 20px; background: var(--surface-2); }
+.stay-dates .dd { font-family: var(--font-data); }
+.stay-dates .dd b { display: block; font-size: 19px; }
+.stay-dates .dd span { font-size: 12.5px; color: var(--muted); }
+.stay-dates .to { text-align: right; }
+.stay-dates .n { text-align: center; font-family: var(--font-data); font-size: 13px; color: var(--muted); }
+.stay-dates .n b { display: block; font-size: 22px; color: var(--fg); }
+.stay-body { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 0; }
+.blk { padding: 16px 20px; border-top: 1px solid var(--line); border-left: 1px solid var(--line); min-width: 0; display: grid; gap: 6px; align-content: start; }
+.blk:first-child { border-left: 0; }
+.blk h4 { margin: 0; font-size: 11px; letter-spacing: .12em; text-transform: uppercase; color: var(--muted); font-weight: 600; }
+.blk .big { font-family: var(--font-data); font-size: 20px; font-weight: 700; }
+.blk .line { display: flex; justify-content: space-between; gap: 10px; font-size: 13.5px; }
+.blk .line span:last-child { font-family: var(--font-data); white-space: nowrap; }
+.blk .line.minus span:last-child { color: var(--ok); }
+.blk .small { font-size: 13.5px; color: var(--muted); }
+.chips { display: flex; flex-wrap: wrap; gap: 6px; }
+.chip { font-size: 12.5px; background: var(--surface-2); border-radius: 999px; padding: 3px 10px; }
+.stay-foot { padding: 14px 20px; border-top: 1px solid var(--line); display: grid; gap: 10px; }
+
+/* Checklists (health, prep) */
+.groups { display: grid; gap: 22px; }
+.group h3 { font-size: 17px; font-weight: 700; margin-bottom: 8px; display: flex; gap: 10px; align-items: baseline; }
+.group h3 small { font-family: var(--font-body); font-weight: 500; font-size: 13px; color: var(--muted); }
+.checks { background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); overflow: hidden; }
+.check { display: grid; grid-template-columns: 28px minmax(0, 1fr) auto; gap: 12px; padding: 14px 18px; border-top: 1px solid var(--line); align-items: start; }
+.check:first-child { border-top: 0; }
+.check input { width: 20px; height: 20px; margin: 2px 0 0; accent-color: var(--accent); cursor: pointer; }
+.check input:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.check .title { font-weight: 600; }
+.check.done .title { text-decoration: line-through; color: var(--muted); }
+.check .why { color: var(--muted); font-size: 14px; margin-top: 2px; max-width: 72ch; }
+.check .side { text-align: right; display: grid; gap: 4px; justify-items: end; font-family: var(--font-data); font-size: 12.5px; color: var(--muted); }
+.check .dot { width: 20px; height: 20px; border-radius: 50%; background: var(--surface-2); display: grid; place-items: center; font-size: 12px; color: var(--muted); }
+.disclaimer { margin-top: 14px; font-size: 13.5px; color: var(--muted); max-width: 80ch; }
+
+/* Permanent-URL banner + offline guide */
+.banner { background: var(--spice-soft); color: var(--fg); border: 1px solid var(--line); border-radius: 12px; padding: 12px 14px; display: grid; gap: 8px; font-size: 14px; }
+.banner b { color: var(--spice); }
+.banner .acts { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+.btn { font: inherit; font-weight: 600; font-size: 14px; padding: 7px 14px; border-radius: 9px; border: 1px solid var(--accent); background: var(--accent); color: var(--surface); cursor: pointer; text-decoration: none; display: inline-block; }
+.btn.ghost { background: transparent; color: var(--accent); }
+.btn:focus-visible { outline: 2px solid var(--fg); outline-offset: 2px; }
+.app-banner { margin-top: 16px; }
+.update-bar { position: sticky; top: env(safe-area-inset-top, 0px); z-index: 6; background: var(--accent); color: var(--surface); }
+.update-bar .wrap { display: flex; gap: 12px; align-items: center; justify-content: space-between; flex-wrap: wrap; padding-block: 10px; font-weight: 600; }
+.update-bar button { font: inherit; font-weight: 700; border: 0; border-radius: 8px; padding: 6px 12px; background: var(--surface); color: var(--accent); cursor: pointer; }
+.guide { display: grid; gap: 14px; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); }
+.guide .card ol { margin: 0; padding-left: 20px; display: grid; gap: 4px; }
+.status-row { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 14px; align-items: center; }
+.url-box { font-family: var(--font-data); font-size: 14px; background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 8px 12px; overflow-wrap: anywhere; }
+
+/* Login */
+.login { min-height: 100vh; display: grid; place-items: center; padding-block: 32px; padding-inline: 16px; }
+.login-card { width: 100%; max-width: 380px; background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); padding: 28px 26px; display: grid; gap: 10px; }
+.login-card h1 { font-size: 30px; font-weight: 800; letter-spacing: -.02em; }
+.login-card p { margin: 0 0 6px; font-size: 14px; }
+.label-pw { font-weight: 600; font-size: 14px; }
+.login-card input[type=password] { font: inherit; font-size: 16px; padding: 10px 12px; border: 1px solid var(--line); border-radius: 10px; background: var(--bg); color: var(--fg); }
+.login-card input[type=password]:focus { outline: 2px solid var(--accent); outline-offset: 1px; border-color: var(--accent); }
+.remember { display: flex; gap: 8px; align-items: center; font-size: 14px; color: var(--muted); }
+.remember input { accent-color: var(--accent); }
+.login-err { color: var(--warn); font-weight: 600; }
+.login-card button { font: inherit; font-weight: 600; font-size: 15px; padding: 11px; border: 0; border-radius: 10px; background: var(--accent); color: var(--surface); cursor: pointer; margin-top: 4px; }
+.login-card button:disabled { opacity: .7; cursor: progress; }
+.login-card button:focus-visible { outline: 2px solid var(--fg); outline-offset: 2px; }
+
+/* Budget */
+.totals { display: flex; flex-wrap: wrap; gap: 12px; margin-bottom: 14px; }
+.total { background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); padding: 14px 18px; min-width: 160px; }
+.total b { display: block; font-family: var(--font-data); font-size: 24px; }
+.tbl-wrap { overflow-x: auto; background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); }
+table { width: 100%; border-collapse: collapse; font-size: 14px; }
+th, td { text-align: left; padding: 10px 16px; border-top: 1px solid var(--line); }
+th { border-top: 0; font-size: 11px; letter-spacing: .1em; text-transform: uppercase; color: var(--muted); }
+td.num { text-align: right; font-family: var(--font-data); white-space: nowrap; }
+
+footer { padding-block: 48px 40px; color: var(--muted); font-size: 13px; }
+.toast { position: fixed; left: 50%; bottom: calc(18px + env(safe-area-inset-bottom, 0px)); transform: translateX(-50%); background: var(--fg); color: var(--bg); padding: 10px 16px; border-radius: 10px; font-size: 14px; z-index: 20; max-width: calc(100% - 32px); }
+
+@media (max-width: 720px) {
+  .hero { grid-template-columns: minmax(0, 1fr); padding-block: 28px 20px; }
+  .count { text-align: left; }
+  .pass { grid-template-columns: minmax(0, 1fr); }
+  .pass-stub { border-left: 0; border-top: 2px dashed var(--line); grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .day { grid-template-columns: minmax(0, 1fr); gap: 6px; }
+  .day .d b { display: inline; margin-right: 6px; }
+  .seg .end .code { font-size: 24px; }
+  .seg .mid { min-width: 76px; }
+  .check { grid-template-columns: 28px minmax(0, 1fr); }
+  .check .side { grid-column: 2; justify-items: start; text-align: left; }
+  .mapgrid { grid-template-columns: minmax(0, 1fr); }
+  .map { width: 100%; max-width: 380px; margin-inline: auto; }
+  .stay-body { grid-template-columns: minmax(0, 1fr); }
+  .blk { border-left: 0; }
+  .stay-head { grid-template-columns: auto minmax(0, 1fr); }
+  .stay-head > .pill { grid-column: 2; justify-self: start; }
+}
+@media (prefers-reduced-motion: no-preference) {
+  html { scroll-behavior: smooth; }
+}
+</style>
+
+<div class="login" id="login" hidden>
+  <form class="login-card" id="login-form" autocomplete="off">
+    <div class="eyebrow">Cestovní složka</div>
+    <h1>Zadejte heslo</h1>
+    <p class="muted">Lety, ubytování a další údaje o cestě jsou zašifrované. Odemknou se heslem, které jste dostali.</p>
+    <label class="label-pw" for="pw">Heslo</label>
+    <input type="password" id="pw" name="pw" required autocomplete="current-password">
+    <label class="remember" for="remember"><input type="checkbox" id="remember"> Zapamatovat na tomto zařízení</label>
+    <p class="login-err" id="login-err" role="alert" hidden>Heslo nesedí. Zkuste to znovu.</p>
+    <button type="submit" id="login-btn">Odemknout</button>
+    <div class="banner" data-home-banner hidden></div>
+  </form>
+</div>
+
+<div id="app" hidden>
+<div class="update-bar" id="update-bar" hidden><div class="wrap"><span id="update-text">Je k dispozici nová verze stránky.</span><button type="button" id="update-btn">Obnovit</button></div></div>
+<div class="wrap"><div class="banner app-banner" data-home-banner hidden></div></div>
+<header class="wrap hero">
+  <div>
+    <div class="eyebrow" id="eyebrow">Dovolená</div>
+    <h1 id="dest"></h1>
+    <div class="dates" id="dates"><span class="muted">Načítám údaje o cestě…</span></div>
+  </div>
+  <div class="count" id="count"></div>
+</header>
+<div class="wrap facts" id="facts"></div>
+
+<nav class="tabs" aria-label="Sekce">
+  <div class="wrap" id="navlinks">
+    <a href="#plan">Plán po dnech</a>
+    <a href="#lety">Lety<span class="n" data-n="flights"></span></a>
+    <a href="#ubytovani">Ubytování a mapa<span class="n" data-n="stays"></span></a>
+    <a href="#vylety">Výlety<span class="n" data-n="excursions"></span></a>
+    <a href="#auto">Auto<span class="n" data-n="cars"></span></a>
+    <a href="#zdravi">Zdraví a očkování</a>
+    <a href="#pred-odjezdem">Před odjezdem</a>
+    <a href="#offline">Offline</a>
+    <a href="#rozpocet">Rozpočet</a>
+  </div>
+</nav>
+
+<main class="wrap">
+  <section id="plan">
+    <div class="sec-head"><h2>Plán po dnech</h2><p>Lety, ubytování, výlety a auto seřazené podle data. Časy jsou místní.</p></div>
+    <div id="plan-body"><div class="empty">Načítám plán…</div></div>
+  </section>
+
+  <section id="lety">
+    <div class="sec-head"><h2>Lety</h2><p>Všechny časy jsou místní časy daného letiště.</p></div>
+    <div id="flights-body"></div>
+  </section>
+
+  <section id="ubytovani">
+    <div class="sec-head"><h2>Ubytování a mapa</h2><p>Kde budete spát kterou noc. Klepnutím na hotel v mapě nebo v seznamu zobrazíte termín a platbu.</p></div>
+    <div class="mapgrid">
+      <div class="map" id="map" role="group" aria-label="Mapa ostrova"></div>
+      <div id="nights"></div>
+    </div>
+    <div id="stays-body"></div>
+  </section>
+
+  <section id="vylety">
+    <div class="sec-head"><h2>Výlety</h2></div>
+    <div id="excursions-body"></div>
+  </section>
+
+  <section id="auto">
+    <div class="sec-head"><h2>Půjčení auta</h2></div>
+    <div id="cars-body"></div>
+  </section>
+
+  <section id="zdravi">
+    <div class="sec-head"><h2>Zdraví a očkování</h2><p>Termín „do“ je počítán zpětně od odletu podle toho, kolik času očkování potřebuje.</p></div>
+    <div id="health-body"></div>
+    <p class="disclaimer">Přehled vychází z obecných doporučení pro cestu do Tanzanie (Zanzibar) přes Spojené arabské emiráty. Konkrétní očkování a antimalarika určí lékař v centru očkování a cestovní medicíny podle vašeho zdravotního stavu a dosavadních očkování.</p>
+  </section>
+
+  <section id="pred-odjezdem">
+    <div class="sec-head"><h2>Před odjezdem</h2><p>Doklady, pojištění a praktické věci. Zaškrtnutí se uloží.</p></div>
+    <div id="prep-body"></div>
+  </section>
+
+  <section id="offline">
+    <div class="sec-head"><h2>Offline a instalace</h2><p>Stránka funguje i bez internetu, když ji otevřete ze stálé adresy a jednou se přihlásíte se zapamatováním.</p></div>
+    <div class="status-row" id="offline-status"></div>
+    <div class="url-box" style="margin-bottom:14px"><span class="muted">Stálá adresa:</span> <a href="https://majerradek.github.io/cestovni-slozka/" target="_blank" rel="noopener">https://majerradek.github.io/cestovni-slozka/</a> <button class="copy" type="button" data-copy="https://majerradek.github.io/cestovni-slozka/">Kopírovat</button></div>
+    <div class="guide">
+      <article class="card"><h3>iPhone</h3><ol>
+        <li>Otevřete stálou adresu v Safari.</li>
+        <li>Klepněte na Sdílet a pak na Přidat na plochu.</li>
+        <li>Spusťte stránku z ikony na ploše.</li>
+        <li>Přihlaste se a zaškrtněte Zapamatovat na tomto zařízení.</li>
+      </ol></article>
+      <article class="card"><h3>Android</h3><ol>
+        <li>Otevřete stálou adresu v Chromu.</li>
+        <li>V menu ⋮ zvolte Přidat na plochu nebo Instalovat aplikaci.</li>
+        <li>Spusťte ji z plochy a přihlaste se se zapamatováním.</li>
+      </ol></article>
+      <article class="card"><h3>Počítač</h3><ol>
+        <li>Otevřete stálou adresu v Chromu, Edgi nebo Safari.</li>
+        <li>Volitelně ji nainstalujte ikonou v adresním řádku nebo si ji uložte do záložek.</li>
+        <li>Po prvním přihlášení se otevře i offline.</li>
+      </ol></article>
+      <article class="card"><h3>Jak poznáte novou verzi</h3><ol>
+        <li>Když jste online, stránka sama zkontroluje, jestli nemá novější verzi, a nahoře ukáže lištu Obnovit.</li>
+        <li>Číslo verze najdete dole na stránce.</li>
+        <li>Před odletem ji jednou otevřete online, ať máte poslední údaje.</li>
+      </ol></article>
+    </div>
+    <p class="disclaimer">Odškrtnutí očkování a formalit se ve stálé verzi ukládá jen do daného zařízení.</p>
+  </section>
+
+  <section id="rozpocet">
+    <div class="sec-head"><h2>Rozpočet</h2><p>Součet cen u rezervací, které mají cenu vyplněnou, zvlášť pro každou měnu.</p></div>
+    <div id="budget-body"></div>
+  </section>
+</main>
+
+<footer class="wrap" style="display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap"><span>Údaje doplňuje Claude podle letenek, potvrzení a rezervací, které mu pošlete. <span class="mono" id="build-label"></span></span><button type="button" class="copy" id="logout">Odhlásit</button></footer>
+</div>
+<div class="toast" id="toast" hidden></div>
+
+<script type="application/json" id="vault">{"v":1,"iter":600000,"salt":"Y4wFfAHqSpAu368IUc5x0A==","iv":"b+y9vcBlK92bP99a","ct":"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"}</script>
+<script>
+const S = { trip: null, flights: [], stays: [], excursions: [], cars: [], health: [], prep: [] };
+const COLLECTIONS = ["flights", "stays", "excursions", "cars", "health", "prep"];
+let db = null;
+let dbState = "loading"; // loading | ready | absent
+
+const esc = (v) => String(v ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+const has = (v) => v !== undefined && v !== null && v !== "";
+
+// Date helpers: dates are "YYYY-MM-DD" strings in local time of the place; handled as UTC to avoid shifts.
+const toUTC = (s) => { const [y, m, d] = s.split("-").map(Number); return Date.UTC(y, m - 1, d); };
+const fromUTC = (t) => new Date(t).toISOString().slice(0, 10);
+const addDays = (s, n) => fromUTC(toUTC(s) + n * 86400000);
+const diffDays = (a, b) => Math.round((toUTC(b) - toUTC(a)) / 86400000);
+const todayStr = () => { const n = new Date(); return `${n.getFullYear()}-${String(n.getMonth() + 1).padStart(2, "0")}-${String(n.getDate()).padStart(2, "0")}`; };
+const fmt = (s, opts) => new Intl.DateTimeFormat("cs-CZ", { timeZone: "UTC", ...opts }).format(new Date(toUTC(s)));
+const fmtDate = (s) => fmt(s, { day: "numeric", month: "numeric", year: "numeric" });
+const fmtShort = (s) => fmt(s, { day: "numeric", month: "numeric" });
+const fmtWd = (s) => fmt(s, { weekday: "short" });
+const fmtMoney = (n, cur) => { try { return new Intl.NumberFormat("cs-CZ", { style: "currency", currency: cur, maximumFractionDigits: 0 }).format(n); } catch { return `${n} ${cur}`; } };
+const plural = (n, one, few, many) => `${n} ${n === 1 ? one : n >= 2 && n <= 4 ? few : many}`;
+
+const byOrder = (a, b) => (a.order ?? 999) - (b.order ?? 999) || String(a.sortKey ?? "").localeCompare(String(b.sortKey ?? ""));
+
+function toast(msg) {
+  const el = document.getElementById("toast");
+  el.textContent = msg; el.hidden = false;
+  clearTimeout(toast.t); toast.t = setTimeout(() => { el.hidden = true; }, 3200);
+}
+
+function copyText(text, btn) {
+  const done = () => { const o = btn.textContent; btn.textContent = "Zkopírováno"; setTimeout(() => { btn.textContent = o; }, 1500); };
+  try {
+    navigator.clipboard.writeText(text).then(done, () => toast(`Kód: ${text}`));
+  } catch { toast(`Kód: ${text}`); }
+}
+
+function emptyBox(what, example) {
+  if (dbState === "loading") return `<div class="empty">Načítám…</div>`;
+  if (dbState === "absent") return `<div class="empty">Data se zobrazí po otevření stránky v Claude.</div>`;
+  return `<div class="empty"><b>Zatím tu nic není.</b> Pošlete Claudovi ${what} a doplní je sem. ${example ? `<br>${example}` : ""}</div>`;
+}
+
+/* ---------- Header ---------- */
+function flightBounds() {
+  const out = S.flights.find((f) => f.direction === "Tam") || S.flights[0];
+  const back = S.flights.find((f) => f.direction === "Zpět");
+  const arrive = out?.segments?.length ? out.segments[out.segments.length - 1].arriveDate : null;
+  const leave = back?.segments?.length ? back.segments[0].departDate : null;
+  return { arrive, leave };
+}
+
+function renderHeader() {
+  const t = S.trip || {};
+  document.getElementById("eyebrow").textContent = t.eyebrow || "Dovolená";
+  document.getElementById("dest").innerHTML = `${esc(t.destination || "Zanzibar")}<span>.</span>`;
+  const dates = document.getElementById("dates");
+  const count = document.getElementById("count");
+  if (has(t.start) && has(t.end)) {
+    const days = diffDays(t.start, t.end) + 1;
+    const { arrive, leave } = flightBounds();
+    const island = arrive && leave ? diffDays(arrive, leave) : null;
+    dates.innerHTML = `<span><b>${fmtDate(t.start)}</b> – <b>${fmtDate(t.end)}</b></span><span class="muted">${plural(days, "den", "dny", "dní")}${island ? ` · ${plural(island, "noc", "noci", "nocí")} na ostrově` : ""}</span>`;
+    const left = diffDays(todayStr(), t.start);
+    if (left > 0) count.innerHTML = `<span class="eyebrow">do odletu</span><b class="mono">${left}</b><span class="muted">${left === 1 ? "den" : left <= 4 ? "dny" : "dní"}</span>`;
+    else if (diffDays(todayStr(), t.end) >= 0) count.innerHTML = `<span class="eyebrow">právě probíhá</span><b>Hakuna matata</b>`;
+    else count.innerHTML = `<span class="eyebrow">cesta skončila</span>`;
+  } else {
+    dates.innerHTML = `<span class="muted">${dbState === "ready" ? "Termín zatím není zadaný." : "Načítám údaje o cestě…"}</span>`;
+    count.innerHTML = "";
+  }
+  const facts = Array.isArray(t.facts) ? t.facts : [];
+  document.getElementById("facts").innerHTML = facts.map((f) => `<span class="fact"><b>${esc(f.label)}</b> ${esc(f.value)}</span>`).join("");
+  document.querySelectorAll("[data-n]").forEach((el) => { const n = S[el.dataset.n].length; el.textContent = n ? n : ""; });
+}
+
+/* ---------- Day plan ---------- */
+function collectEvents() {
+  const ev = [];
+  for (const f of S.flights) for (const s of f.segments || []) {
+    ev.push({ date: s.departDate, time: s.departTime, k: "fl", kl: "LET", title: `${s.flightNo} ${s.from?.code} → ${s.to?.code}`, sub: `${s.airline || ""}, přílet ${s.arriveDate !== s.departDate ? fmtShort(s.arriveDate) + " " : ""}${s.arriveTime} (${s.to?.city || s.to?.code})` });
+  }
+  for (const h of S.stays) {
+    if (has(h.checkIn)) ev.push({ date: h.checkIn, time: h.checkInTime || "", k: "st", kl: "UB", title: `Check-in: ${h.name}`, sub: h.place || "" });
+    if (has(h.checkOut)) ev.push({ date: h.checkOut, time: h.checkOutTime || "", k: "st", kl: "UB", title: `Check-out: ${h.name}`, sub: h.place || "" });
+  }
+  for (const x of S.excursions) if (has(x.date)) ev.push({ date: x.date, time: x.time || "", k: "ex", kl: "VÝL", title: x.title, sub: [x.place, x.provider].filter(has).join(" · ") });
+  for (const c of S.cars) {
+    if (has(c.pickupDate)) ev.push({ date: c.pickupDate, time: c.pickupTime || "", k: "car", kl: "AUTO", title: `Převzetí auta: ${c.company || ""}`, sub: c.pickupPlace || "" });
+    if (has(c.dropoffDate)) ev.push({ date: c.dropoffDate, time: c.dropoffTime || "", k: "car", kl: "AUTO", title: `Vrácení auta: ${c.company || ""}`, sub: c.dropoffPlace || "" });
+  }
+  return ev.filter((e) => has(e.date)).sort((a, b) => (a.date + (a.time || "99")).localeCompare(b.date + (b.time || "99")));
+}
+
+function renderPlan() {
+  const el = document.getElementById("plan-body");
+  const t = S.trip || {};
+  const events = collectEvents();
+  if (!has(t.start) || !has(t.end)) { el.innerHTML = events.length ? "" : emptyBox("termín cesty nebo první rezervaci"); if (!events.length) return; }
+  const start = has(t.start) ? t.start : events[0].date;
+  const end = has(t.end) ? t.end : events[events.length - 1].date;
+  const byDay = new Map();
+  for (const e of events) { if (!byDay.has(e.date)) byDay.set(e.date, []); byDay.get(e.date).push(e); }
+  const rows = [];
+  let quietFrom = null;
+  const flushQuiet = (until) => {
+    if (!quietFrom) return;
+    const label = quietFrom === until ? `${fmtShort(quietFrom)}` : `${fmtShort(quietFrom)} – ${fmtShort(until)}`;
+    const n = diffDays(quietFrom, until) + 1;
+    rows.push(`<div class="day quiet"><div class="d"><b>${label}</b></div><div class="ev-list">${n === 1 ? "Volný den" : plural(n, "volný den", "volné dny", "volných dní")}, zatím nic naplánováno</div></div>`);
+    quietFrom = null;
+  };
+  for (let d = start; diffDays(d, end) >= 0; d = addDays(d, 1)) {
+    const list = byDay.get(d);
+    if (!list) { if (!quietFrom) quietFrom = d; continue; }
+    flushQuiet(addDays(d, -1));
+    rows.push(`<div class="day"><div class="d"><b>${fmtShort(d)}</b>${fmtWd(d)}</div><div class="ev-list">${list.map((e) => `<div class="ev"><span class="t">${esc(e.time || "")}</span><span class="k ${e.k}">${e.kl}</span><span><b>${esc(e.title)}</b>${e.sub ? `<div class="s">${esc(e.sub)}</div>` : ""}</span></div>`).join("")}</div></div>`);
+  }
+  flushQuiet(end);
+  el.innerHTML = `<div class="days">${rows.join("")}</div>`;
+}
+
+/* ---------- Flights ---------- */
+function renderFlights() {
+  const el = document.getElementById("flights-body");
+  if (!S.flights.length) { el.innerHTML = emptyBox("letenky (screenshot nebo PDF)"); return; }
+  el.innerHTML = `<div class="passes">${S.flights.map((f) => {
+    const segs = f.segments || [];
+    const first = segs[0], last = segs[segs.length - 1];
+    const route = segs.length ? [first.from?.code, ...segs.map((s) => s.to?.code)].join(" → ") : "";
+    const segHtml = segs.map((s, i) => `
+      <div class="seg">
+        <div class="end"><div class="code">${esc(s.from?.code)}</div><div class="when">${fmtShort(s.departDate)} ${fmtWd(s.departDate)} · <b>${esc(s.departTime)}</b></div><div class="city">${esc(s.from?.city)}${s.from?.terminal ? `, terminál ${esc(s.from.terminal)}` : ""}</div></div>
+        <div class="mid"><div class="fn">${esc(s.flightNo)}</div><div class="line"></div><div>${esc(s.duration || "")}</div></div>
+        <div class="end to"><div class="code">${esc(s.to?.code)}</div><div class="when">${s.arriveDate !== s.departDate ? `${fmtShort(s.arriveDate)} ${fmtWd(s.arriveDate)} · ` : ""}<b>${esc(s.arriveTime)}</b></div><div class="city">${esc(s.to?.city)}</div></div>
+      </div>
+      ${s.layoverAfter && i < segs.length - 1 ? `<div class="layover">Přestup ${esc(s.to?.city || s.to?.code)} · ${esc(s.layoverAfter)}</div>` : ""}`).join("");
+    const stub = [
+      has(f.bookingRef) ? `<div class="kv"><span>Rezervace${f.agency ? ` · ${esc(f.agency)}` : ""}</span><b>${esc(f.bookingRef)}</b><button class="copy" type="button" data-copy="${esc(f.bookingRef)}">Kopírovat</button></div>` : "",
+      has(f.airlinePnr) ? `<div class="kv"><span>PNR aerolinky</span><b>${esc(f.airlinePnr)}</b></div>` : "",
+      `<div class="kv"><span>Aerolinka</span><b>${esc(f.airline || first?.airline || "")}</b></div>`,
+      `<div class="kv"><span>Třída</span><b>${esc(f.cabin || first?.cabin || "")}</b></div>`,
+      has(f.baggage) ? `<div class="kv"><span>Zavazadla</span><b>${esc(f.baggage)}</b></div>` : "",
+      has(f.seats) ? `<div class="kv"><span>Sedadla</span><b>${esc(f.seats)}</b></div>` : "",
+      has(f.price) ? `<div class="kv"><span>Cena</span><b>${fmtMoney(f.price, f.currency || "CZK")}</b></div>` : "",
+    ].join("");
+    return `<article class="pass">
+      <div class="pass-main">
+        <div class="pass-top"><span class="dir">${esc(f.direction)}</span><span class="route">${esc(route)}</span></div>
+        ${segHtml}
+        ${f.note ? `<div class="note">${esc(f.note)}</div>` : ""}
+      </div>
+      <div class="pass-stub">${stub}</div>
+    </article>`;
+  }).join("")}</div>`;
+}
+
+/* ---------- Stays, map, nights ---------- */
+const STAY_STATUS = { selected: ["Čeká na potvrzení", "spice"], confirmed: ["Potvrzeno", "ok"], cancelled: ["Zrušeno", "warn"] };
+const sortedStays = () => [...S.stays].filter((h) => h.status !== "cancelled").sort((a, b) => String(a.checkIn || "9999").localeCompare(String(b.checkIn || "9999")));
+const stayNo = (h) => sortedStays().indexOf(h) + 1;
+const rangeLabel = (a, b) => `${fmtWd(a)} ${fmtShort(a)} – ${fmtWd(b)} ${fmtShort(b)}`;
+
+function paymentPill(pay) {
+  if (!pay) return "";
+  if (pay.status === "paid") return `<span class="pill ok">Zaplaceno</span>`;
+  if (!has(pay.dueDate)) return `<span class="pill plain">Termín platby neznámý</span>`;
+  const left = diffDays(todayStr(), pay.dueDate);
+  const cls = left < 0 ? "warn" : left <= 14 ? "spice" : "plain";
+  const when = left < 0 ? `mělo proběhnout ${fmtShort(pay.dueDate)}` : left === 0 ? "dnes" : `${fmtDate(pay.dueDate)} · za ${plural(left, "den", "dny", "dní")}`;
+  return `<span class="pill ${cls}">${pay.status === "scheduled" ? "Strhne se" : "Zaplatit do"} ${when}</span>`;
+}
+
+function cancelPill(c) {
+  if (!c) return "";
+  if (c.nonRefundable) return `<span class="pill warn">Nevratné</span>`;
+  if (!has(c.freeUntil)) return `<span class="pill plain">Podmínky storna doplnit</span>`;
+  const left = diffDays(todayStr(), c.freeUntil);
+  return left < 0 ? `<span class="pill plain">Bezplatné storno skončilo ${fmtShort(c.freeUntil)}</span>` : `<span class="pill ok">Zdarma zrušit do ${fmtDate(c.freeUntil)}${c.freeUntilTime ? ` ${esc(c.freeUntilTime)}` : ""}</span>`;
+}
+
+// Map projection: equirectangular, 1000 units per degree (the island spans ~0.5° × 0.8°, so latitude distortion is negligible)
+const MAP = { lonMin: 39.12, lonMax: 39.64, latTop: -5.66, latBottom: -6.53 };
+const mx = (lon) => (lon - MAP.lonMin) * 1000;
+const my = (lat) => (MAP.latTop - lat) * 1000;
+const pctX = (lon) => (mx(lon) / ((MAP.lonMax - MAP.lonMin) * 1000)) * 100;
+const pctY = (lat) => (my(lat) / ((MAP.latTop - MAP.latBottom) * 1000)) * 100;
+// Simplified coastline of Unguja, clockwise from Nungwi (lat, lon)
+const COAST = [[-5.722,39.298],[-5.76,39.312],[-5.83,39.335],[-5.875,39.357],[-5.95,39.372],[-6.0,39.392],[-6.05,39.418],[-6.095,39.452],[-6.13,39.452],[-6.16,39.438],[-6.205,39.44],[-6.225,39.452],[-6.2,39.47],[-6.155,39.478],[-6.128,39.49],[-6.145,39.51],[-6.185,39.525],[-6.235,39.538],[-6.275,39.54],[-6.32,39.55],[-6.37,39.558],[-6.415,39.552],[-6.455,39.53],[-6.485,39.505],[-6.47,39.48],[-6.44,39.462],[-6.41,39.43],[-6.385,39.395],[-6.365,39.36],[-6.345,39.33],[-6.33,39.295],[-6.31,39.275],[-6.285,39.285],[-6.255,39.25],[-6.225,39.215],[-6.195,39.2],[-6.165,39.186],[-6.135,39.195],[-6.1,39.208],[-6.05,39.202],[-6.005,39.198],[-5.95,39.222],[-5.9,39.24],[-5.86,39.255],[-5.81,39.272],[-5.76,39.288]];
+
+function mapSvg() {
+  const W = (MAP.lonMax - MAP.lonMin) * 1000, H = (MAP.latTop - MAP.latBottom) * 1000;
+  const pts = COAST.map(([la, lo]) => `${mx(lo).toFixed(1)},${my(la).toFixed(1)}`).join(" ");
+  const grid = [-5.8, -6.0, -6.2, -6.4].map((la) => `<line class="grid" x1="0" x2="${W}" y1="${my(la)}" y2="${my(la)}"/><text class="gridlbl" x="6" y="${my(la) - 5}">${Math.abs(la).toFixed(1)}° j. š.</text>`).join("");
+  return `<svg viewBox="0 0 ${W} ${H}" aria-hidden="true">${grid}
+    <polygon class="land" points="${pts}"/>
+    <ellipse class="land" cx="${mx(39.385)}" cy="${my(-5.82)}" rx="6" ry="8"/>
+    <circle class="land" cx="${mx(39.168)}" cy="${my(-6.115)}" r="4"/>
+    <text class="sea" x="${mx(39.5)}" y="${my(-5.85)}" text-anchor="middle">Indický</text>
+    <text class="sea" x="${mx(39.5)}" y="${my(-5.85) + 20}" text-anchor="middle">oceán</text>
+    <text class="sea" x="${mx(39.2)}" y="${my(-6.42)}" text-anchor="middle">Zanzibarský</text>
+    <text class="sea" x="${mx(39.2)}" y="${my(-6.42) + 20}" text-anchor="middle">průliv</text>
+  </svg>`;
+}
+
+function tipForStay(h) {
+  const nights = has(h.checkIn) && has(h.checkOut) ? diffDays(h.checkIn, h.checkOut) : null;
+  const pay = h.payment;
+  return `<h4>${esc(h.name)}</h4><div class="muted">${esc(h.area || h.place || "")}</div>
+    ${has(h.checkIn) ? `<div class="row"><span>Termín</span><span>${rangeLabel(h.checkIn, h.checkOut)}</span></div>` : ""}
+    ${nights ? `<div class="row"><span>Noci</span><span>${nights}</span></div>` : ""}
+    ${has(h.checkInTime) ? `<div class="row"><span>Check-in</span><span>${esc(h.checkInTime)}</span></div>` : ""}
+    ${has(h.checkOutTime) ? `<div class="row"><span>Check-out</span><span>${esc(h.checkOutTime)}</span></div>` : ""}
+    ${has(h.price) ? `<div class="row"><span>Cena</span><span>${fmtMoney(h.price, h.currency || "CZK")}</span></div>` : ""}
+    ${pay && has(pay.dueDate) ? `<div class="row"><span>${pay.status === "paid" ? "Zaplaceno" : "Platba"}</span><span>${fmtDate(pay.dueDate)}</span></div>` : ""}
+    <a href="#stay-${esc(h.id)}" data-close-tip>Detail ubytování ↓</a>`;
+}
+
+function flightTimesAt(code) {
+  const rows = [];
+  for (const f of S.flights) for (const s of f.segments || []) {
+    if (s.to?.code === code) rows.push(`<div class="row"><span>Přílet ${esc(s.flightNo)}</span><span>${fmtShort(s.arriveDate)} ${esc(s.arriveTime)}</span></div>`);
+    if (s.from?.code === code) rows.push(`<div class="row"><span>Odlet ${esc(s.flightNo)}</span><span>${fmtShort(s.departDate)} ${esc(s.departTime)}</span></div>`);
+  }
+  return rows.join("");
+}
+
+let mapItems = [];
+let activeTip = null;
+function renderMap() {
+  const el = document.getElementById("map");
+  mapItems = [];
+  const places = Array.isArray(S.trip?.places) ? S.trip.places : [];
+  for (const p of places) if (has(p.lat)) mapItems.push({ key: `p-${p.name}`, cls: `place${p.kind === "airport" ? " airport" : ""}`, lat: p.lat, lon: p.lon, inner: `<i>${p.kind === "airport" ? "✈" : ""}</i>${esc(p.label || p.name)}`, label: p.name, tip: `<h4>${esc(p.name)}</h4>${p.note ? `<div class="muted">${esc(p.note)}</div>` : ""}${p.code ? flightTimesAt(p.code) : ""}` });
+  for (const x of S.excursions) if (has(x.lat)) mapItems.push({ key: `x-${x.id}`, cls: "ex", lat: x.lat, lon: x.lon, inner: "", label: x.title, tip: `<h4>${esc(x.title)}</h4>${has(x.date) ? `<div class="row"><span>Kdy</span><span>${fmtWd(x.date)} ${fmtShort(x.date)}${x.time ? ` ${esc(x.time)}` : ""}</span></div>` : `<div class="muted">Bez termínu</div>`}${has(x.price) ? `<div class="row"><span>Cena</span><span>${fmtMoney(x.price, x.currency || "USD")}</span></div>` : ""}` });
+  for (const h of sortedStays()) if (has(h.lat)) mapItems.push({ key: `s-${h.id}`, cls: `stay${h.status === "confirmed" ? "" : " pending"}`, lat: h.lat, lon: h.lon, inner: `<span>${stayNo(h)}</span>`, label: h.name, tip: tipForStay(h) });
+  el.innerHTML = mapSvg() + mapItems.map((m, i) => `<button type="button" class="mk ${m.cls}" data-mk="${i}" style="left:${pctX(m.lon).toFixed(2)}%;top:${pctY(m.lat).toFixed(2)}%" aria-label="${esc(m.label)}">${m.inner}</button>`).join("") + `<div class="tip" id="tip" hidden></div>`;
+  if (activeTip) { const i = mapItems.findIndex((m) => m.key === activeTip); if (i >= 0) showTip(i); else activeTip = null; }
+}
+
+function showTip(i) {
+  const m = mapItems[i];
+  const tip = document.getElementById("tip");
+  if (!m || !tip) return;
+  activeTip = m.key;
+  document.querySelectorAll(".mk.active").forEach((b) => b.classList.remove("active"));
+  document.querySelector(`[data-mk="${i}"]`)?.classList.add("active");
+  tip.innerHTML = m.tip;
+  tip.hidden = false;
+  const x = pctX(m.lon), y = pctY(m.lat);
+  tip.style.left = x < 35 ? "8px" : x > 65 ? "auto" : `${x}%`;
+  tip.style.right = x > 65 ? "8px" : "auto";
+  const tx = x < 35 || x > 65 ? "0" : "-50%";
+  if (y > 45) { tip.style.top = `${y}%`; tip.style.transform = `translate(${tx}, calc(-100% - 26px))`; }
+  else { tip.style.top = `${y}%`; tip.style.transform = `translate(${tx}, 22px)`; }
+}
+function hideTip() { activeTip = null; const tip = document.getElementById("tip"); if (tip) tip.hidden = true; document.querySelectorAll(".mk.active").forEach((b) => b.classList.remove("active")); }
+
+// Night-by-night coverage between landing on the island and flying home
+function renderNights() {
+  const el = document.getElementById("nights");
+  const { arrive, leave } = flightBounds();
+  const out = S.flights.find((f) => f.direction === "Tam");
+  const arriveTime = out?.segments?.[out.segments.length - 1]?.arriveTime || "";
+  if (!arrive || !leave) { el.innerHTML = sortedStays().length ? "" : emptyBox("potvrzení rezervace hotelu"); return; }
+  const earlyArrival = arriveTime && arriveTime < "06:00";
+  const firstNight = earlyArrival ? addDays(arrive, -1) : arrive;
+  const stays = sortedStays();
+  const owner = (d) => stays.find((h) => has(h.checkIn) && has(h.checkOut) && diffDays(h.checkIn, d) >= 0 && diffDays(d, h.checkOut) > 0);
+  const rows = [];
+  let cur = null;
+  for (let d = firstNight; diffDays(d, leave) > 0; d = addDays(d, 1)) {
+    const h = owner(d) || null;
+    if (cur && cur.h === h) { cur.to = addDays(d, 1); continue; }
+    cur = { h, from: d, to: addDays(d, 1) };
+    rows.push(cur);
+  }
+  const html = [];
+  const t = S.trip || {};
+  if (has(t.start) && diffDays(t.start, firstNight) > 0) html.push(`<div class="night"><span class="b fly">✈</span><div><b>Cesta tam</b><div class="s">Noc v letadle a přestup v Abú Dhabí</div></div><span class="w">${fmtShort(t.start)}</span></div>`);
+  for (const r of rows) {
+    const n = diffDays(r.from, r.to);
+    if (r.h) {
+      html.push(`<button type="button" class="night" data-stay="${esc(r.h.id)}"><span class="b">${stayNo(r.h)}</span><div><b>${esc(r.h.name)}</b><div class="s">${esc(r.h.area || r.h.place || "")} · ${plural(n, "noc", "noci", "nocí")}</div></div><span class="w">${fmtShort(r.from)} – ${fmtShort(r.to)}</span></button>`);
+    } else {
+      const tip = earlyArrival && r.from === firstNight ? `Přílet ${fmtShort(arrive)} ve ${arriveTime}, pokoj je potřeba už od ${fmtShort(firstNight)}.` : "Ubytování zatím chybí.";
+      html.push(`<div class="night gaprow"><span class="b gap">?</span><div><b>Chybí ubytování · ${plural(n, "noc", "noci", "nocí")}</b><div class="s">${esc(tip)}</div></div><span class="w">${fmtShort(r.from)} – ${fmtShort(r.to)}</span></div>`);
+    }
+  }
+  html.push(`<div class="night"><span class="b fly">✈</span><div><b>Cesta domů</b><div class="s">Odlet ${fmtShort(leave)}${S.flights.find((f) => f.direction === "Zpět")?.segments?.[0]?.departTime ? ` v ${S.flights.find((f) => f.direction === "Zpět").segments[0].departTime}` : ""}, přílet do Prahy ${t.end ? fmtShort(t.end) : ""}</div></div><span class="w">${fmtShort(leave)}</span></div>`);
+  el.innerHTML = `<div class="nights">${html.join("")}</div>`;
+}
+
+function renderStays() {
+  const el = document.getElementById("stays-body");
+  renderMap(); renderNights();
+  const list = [...sortedStays(), ...S.stays.filter((h) => h.status === "cancelled")];
+  if (!list.length) { el.innerHTML = flightBounds().arrive ? `<div class="empty"><b>Zatím žádný hotel.</b> Pošlete Claudovi odkaz nebo potvrzení rezervace a objeví se tady i v mapě.</div>` : ""; return; }
+  el.innerHTML = `<div class="stays">${list.map((h) => {
+    const nights = has(h.checkIn) && has(h.checkOut) ? diffDays(h.checkIn, h.checkOut) : null;
+    const [stLabel, stCls] = STAY_STATUS[h.status] || STAY_STATUS.selected;
+    const pay = h.payment || null;
+    const c = h.cancellation || null;
+    const discounts = Array.isArray(h.discounts) ? h.discounts : [];
+    const amenities = Array.isArray(h.amenities) ? h.amenities : [];
+    const no = stayNo(h);
+    return `<article class="stay" id="stay-${esc(h.id)}">
+      <div class="stay-head">
+        <span class="b">${no > 0 ? no : "–"}</span>
+        <div>
+          <div class="eyebrow">${esc(h.area || h.place || "")}</div>
+          <h3>${esc(h.name)}</h3>
+          <div>${h.stars ? `<span class="stars" aria-label="${h.stars} hvězdiček">${"★".repeat(h.stars)}</span> ` : ""}${has(h.rating) ? `<span class="score"><b>${esc(String(h.rating).replace(".", ","))}</b>${esc(h.ratingLabel || "")}${h.reviews ? ` · ${new Intl.NumberFormat("cs-CZ").format(h.reviews)} hodnocení` : ""}${h.locationScore ? ` · poloha ${esc(String(h.locationScore).replace(".", ","))}` : ""}</span>` : ""}</div>
+        </div>
+        <span class="pill ${stCls}">${stLabel}</span>
+      </div>
+      <div class="stay-dates">
+        <div class="dd"><span>Příjezd</span><b>${has(h.checkIn) ? `${fmtWd(h.checkIn)} ${fmtShort(h.checkIn)}` : "—"}</b><span>${esc(h.checkInTime || "")}</span></div>
+        <div class="n">${nights ? `<b>${nights}</b>${nights === 1 ? "noc" : nights <= 4 ? "noci" : "nocí"}` : ""}</div>
+        <div class="dd to"><span>Odjezd</span><b>${has(h.checkOut) ? `${fmtWd(h.checkOut)} ${fmtShort(h.checkOut)}` : "—"}</b><span>${esc(h.checkOutTime || "")}</span></div>
+      </div>
+      <div class="stay-body">
+        <div class="blk">
+          <h4>Cena</h4>
+          ${has(h.price) ? `<div class="big">${fmtMoney(h.price, h.currency || "CZK")}</div>` : `<div class="small">Neuvedena</div>`}
+          ${has(h.priceOriginal) ? `<div class="line"><span>Původní cena</span><span>${fmtMoney(h.priceOriginal, h.currency || "CZK")}</span></div>` : ""}
+          ${discounts.map((d) => `<div class="line minus"><span>${esc(d.label)}</span><span>−${fmtMoney(d.amount, h.currency || "CZK")}</span></div>`).join("")}
+          ${h.priceLocal ? `<div class="line"><span>V měně hotelu</span><span>${fmtMoney(h.priceLocal.amount, h.priceLocal.currency)}</span></div>` : ""}
+          ${nights && has(h.price) ? `<div class="line"><span>Za noc</span><span>${fmtMoney(h.price / nights, h.currency || "CZK")}</span></div>` : ""}
+          ${has(h.priceNote) ? `<div class="small">${esc(h.priceNote)}</div>` : ""}
+        </div>
+        <div class="blk">
+          <h4>Platba</h4>
+          ${pay ? paymentPill(pay) : `<span class="pill plain">Neuvedeno</span>`}
+          ${pay?.method ? `<div class="small">${esc(pay.method)}</div>` : ""}
+          ${pay?.currencyNote ? `<div class="small">${esc(pay.currencyNote)}</div>` : ""}
+          <h4 style="margin-top:8px">Storno</h4>
+          ${c ? cancelPill(c) : `<span class="pill plain">Podmínky storna doplnit</span>`}
+          ${c?.note ? `<div class="small">${esc(c.note)}</div>` : ""}
+        </div>
+        <div class="blk">
+          <h4>Rezervace</h4>
+          ${has(h.bookingRef) ? `<div class="big">${esc(h.bookingRef)}</div><button class="copy" type="button" data-copy="${esc(h.bookingRef)}">Kopírovat</button>` : `<div class="small">Číslo rezervace zatím chybí</div>`}
+          ${has(h.pin) ? `<div class="line"><span>PIN</span><span>${esc(h.pin)}</span></div>` : ""}
+          ${has(h.bookedVia) ? `<div class="line"><span>Přes</span><span>${esc(h.bookedVia)}</span></div>` : ""}
+          ${has(h.room) ? `<div class="line"><span>Pokoj</span><span>${esc(h.room)}</span></div>` : ""}
+          ${has(h.board) ? `<div class="line"><span>Strava</span><span>${esc(h.board)}</span></div>` : ""}
+          ${has(h.guests) ? `<div class="line"><span>Hosté</span><span>${esc(h.guests)}</span></div>` : ""}
+        </div>
+      </div>
+      <div class="stay-foot">
+        ${amenities.length ? `<div class="chips">${amenities.map((a) => `<span class="chip">${esc(a)}</span>`).join("")}</div>` : ""}
+        ${has(h.address) ? `<div><span class="eyebrow">Adresa</span><div>${esc(h.address)}</div></div>` : ""}
+        <div style="display:flex;flex-wrap:wrap;gap:6px 16px">
+          ${has(h.mapsQuery) ? `<a href="https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(h.mapsQuery)}" target="_blank" rel="noopener">Otevřít v Google Maps</a>` : ""}
+          ${has(h.url) ? `<a href="${esc(h.url)}" target="_blank" rel="noopener">Stránka hotelu</a>` : ""}
+          ${has(h.phone) ? `<span>Tel.: <span class="mono">${esc(h.phone)}</span></span>` : ""}
+          ${has(h.transferNote) ? `<span class="muted">${esc(h.transferNote)}</span>` : ""}
+        </div>
+        ${has(h.note) ? `<div class="small muted">${esc(h.note)}</div>` : ""}
+      </div>
+    </article>`;
+  }).join("")}</div>`;
+}
+
+document.addEventListener("click", (e) => {
+  const mk = e.target.closest("[data-mk]");
+  if (mk) { const i = Number(mk.dataset.mk); if (mapItems[i]?.key === activeTip) hideTip(); else showTip(i); return; }
+  const row = e.target.closest("[data-stay]");
+  if (row) {
+    const i = mapItems.findIndex((m) => m.key === `s-${row.dataset.stay}`);
+    if (i >= 0) { showTip(i); document.getElementById("map").scrollIntoView({ block: "nearest" }); }
+    else document.getElementById(`stay-${row.dataset.stay}`)?.scrollIntoView();
+    return;
+  }
+  if (e.target.closest("[data-close-tip]")) { hideTip(); return; }
+  if (!e.target.closest("#tip")) hideTip();
+});
+document.addEventListener("keydown", (e) => { if (e.key === "Escape") hideTip(); });
+document.addEventListener("mouseover", (e) => { const mk = e.target.closest("[data-mk]"); if (mk && window.matchMedia("(hover: hover)").matches) showTip(Number(mk.dataset.mk)); });
+
+/* ---------- Excursions ---------- */
+const EX_STATUS = { idea: ["Nápad", "plain"], planned: ["Plánováno", "spice"], booked: ["Rezervováno", "ok"], paid: ["Zaplaceno", "ok"] };
+function renderExcursions() {
+  const el = document.getElementById("excursions-body");
+  if (!S.excursions.length) { el.innerHTML = emptyBox("výlety, které chcete podniknout, nebo jen nápady", "Třeba Stone Town, Prison Island, Jozani Forest, šnorchlování u Mnemby nebo Safari Blue."); return; }
+  const list = [...S.excursions].sort((a, b) => String(a.date || "9999").localeCompare(String(b.date || "9999")));
+  el.innerHTML = `<div class="cards">${list.map((x) => {
+    const [label, cls] = EX_STATUS[x.status] || EX_STATUS.idea;
+    return `<article class="card">
+      <div style="display:flex;justify-content:space-between;gap:8px;align-items:center"><span class="eyebrow">${has(x.date) ? `${fmtShort(x.date)} ${fmtWd(x.date)}${x.time ? ` · ${esc(x.time)}` : ""}` : "Bez termínu"}</span><span class="pill ${cls}">${label}</span></div>
+      <h3>${esc(x.title)}</h3>
+      ${has(x.description) ? `<div class="muted">${esc(x.description)}</div>` : ""}
+      <div class="meta">
+        ${has(x.place) ? `<div class="kv"><span>Kde</span><b>${esc(x.place)}</b></div>` : ""}
+        ${has(x.provider) ? `<div class="kv"><span>Pořádá</span><b>${esc(x.provider)}</b></div>` : ""}
+        ${has(x.duration) ? `<div class="kv"><span>Délka</span><b>${esc(x.duration)}</b></div>` : ""}
+        ${has(x.price) ? `<div class="kv"><span>Cena</span><b>${fmtMoney(x.price, x.currency || "USD")}</b></div>` : ""}
+      </div>
+      ${has(x.url) ? `<a href="${esc(x.url)}" target="_blank" rel="noopener">Více informací</a>` : ""}
+      ${has(x.note) ? `<div class="note">${esc(x.note)}</div>` : ""}
+    </article>`;
+  }).join("")}</div>`;
+}
+
+/* ---------- Cars ---------- */
+function renderCars() {
+  const el = document.getElementById("cars-body");
+  if (!S.cars.length) { el.innerHTML = emptyBox("potvrzení půjčení auta", "Na Zanzibaru je potřeba místní řidičské povolení, které obvykle zařídí půjčovna."); return; }
+  el.innerHTML = `<div class="cards">${S.cars.map((c) => `<article class="card">
+      <div class="eyebrow">${esc(c.company || "Půjčovna")}</div>
+      <h3>${esc(c.car || "Auto")}</h3>
+      <div class="meta">
+        <div class="kv"><span>Převzetí</span><b>${has(c.pickupDate) ? fmtShort(c.pickupDate) : "—"} ${esc(c.pickupTime || "")}</b><span style="text-transform:none;letter-spacing:0;font-weight:400">${esc(c.pickupPlace || "")}</span></div>
+        <div class="kv"><span>Vrácení</span><b>${has(c.dropoffDate) ? fmtShort(c.dropoffDate) : "—"} ${esc(c.dropoffTime || "")}</b><span style="text-transform:none;letter-spacing:0;font-weight:400">${esc(c.dropoffPlace || "")}</span></div>
+        ${has(c.bookingRef) ? `<div class="kv"><span>Rezervace</span><b>${esc(c.bookingRef)}</b></div>` : ""}
+        ${has(c.insurance) ? `<div class="kv"><span>Pojištění</span><b>${esc(c.insurance)}</b></div>` : ""}
+        ${has(c.deposit) ? `<div class="kv"><span>Kauce</span><b>${esc(c.deposit)}</b></div>` : ""}
+        ${has(c.price) ? `<div class="kv"><span>Cena</span><b>${fmtMoney(c.price, c.currency || "USD")}</b></div>` : ""}
+      </div>
+      ${has(c.note) ? `<div class="note">${esc(c.note)}</div>` : ""}
+    </article>`).join("")}</div>`;
+}
+
+/* ---------- Checklists ---------- */
+function deadlineInfo(item) {
+  const start = S.trip?.start;
+  if (!has(item.leadDays) || !has(start)) return null;
+  const dl = addDays(start, -item.leadDays);
+  const left = diffDays(todayStr(), dl);
+  let cls = "plain", label = `do ${fmtShort(dl)}`;
+  if (item.done) cls = "ok";
+  else if (left < 0) { cls = "warn"; label = `termín ${fmtShort(dl)} uplynul`; }
+  else if (left <= 14) { cls = "spice"; label = `do ${fmtShort(dl)} · ${plural(left, "den", "dny", "dní")}`; }
+  return { cls, label };
+}
+
+function checkRow(coll, item) {
+  const dl = deadlineInfo(item);
+  const checkable = item.checkable !== false;
+  return `<div class="check${item.done ? " done" : ""}">
+    ${checkable ? `<input type="checkbox" id="chk-${esc(coll)}-${esc(item.id)}" data-coll="${esc(coll)}" data-id="${esc(item.id)}" ${item.done ? "checked" : ""} aria-label="Hotovo: ${esc(item.title)}">` : `<span class="dot" aria-hidden="true">i</span>`}
+    <div><label class="title" ${checkable ? `for="chk-${esc(coll)}-${esc(item.id)}"` : ""}>${esc(item.title)}</label>${item.why ? `<div class="why">${esc(item.why)}</div>` : ""}${item.link ? `<div class="why"><a href="${esc(item.link)}" target="_blank" rel="noopener">${esc(item.linkLabel || item.link)}</a></div>` : ""}</div>
+    <div class="side">${item.done ? `<span class="pill ok">Hotovo</span>` : dl ? `<span class="pill ${dl.cls}">${dl.label}</span>` : ""}${item.timing ? `<span>${esc(item.timing)}</span>` : ""}${has(item.cost) ? `<span>${esc(item.cost)}</span>` : ""}</div>
+  </div>`;
+}
+
+const HEALTH_GROUPS = [
+  ["step", "Nejdřív", "objednat se k lékaři"],
+  ["required", "Povinné", "kontrola na hranicích"],
+  ["recommended", "Doporučené", "pro Zanzibar obvykle doporučované"],
+  ["consider", "Zvážit", "podle programu a délky pobytu"],
+  ["routine", "Zkontrolovat", "běžná očkování, která mají platit"],
+  ["malaria", "Malárie a komáři", "léky a ochrana"],
+];
+const PREP_GROUPS = [
+  ["docs", "Doklady a vstup", ""],
+  ["insurance", "Pojištění", ""],
+  ["money", "Peníze a technika", ""],
+  ["travel", "Cesta", ""],
+];
+
+function renderChecklist(coll, groups, elId, what) {
+  const el = document.getElementById(elId);
+  const items = S[coll];
+  if (!items.length) { el.innerHTML = emptyBox(what); return; }
+  const html = groups.map(([key, title, sub]) => {
+    const g = items.filter((i) => i.kind === key).sort(byOrder);
+    if (!g.length) return "";
+    const done = g.filter((i) => i.done).length;
+    const checkable = g.filter((i) => i.checkable !== false).length;
+    return `<div class="group"><h3>${esc(title)} <small>${esc(sub)}${checkable ? `${sub ? " · " : ""}${done}/${checkable} hotovo` : ""}</small></h3><div class="checks">${g.map((i) => checkRow(coll, i)).join("")}</div></div>`;
+  }).join("");
+  const other = items.filter((i) => !groups.some(([k]) => k === i.kind)).sort(byOrder);
+  el.innerHTML = `<div class="groups">${html}${other.length ? `<div class="group"><h3>Ostatní</h3><div class="checks">${other.map((i) => checkRow(coll, i)).join("")}</div></div>` : ""}</div>`;
+}
+
+/* ---------- Budget ---------- */
+function renderBudget() {
+  const el = document.getElementById("budget-body");
+  const rows = [];
+  for (const f of S.flights) if (has(f.price)) rows.push(["Letenky", `${f.direction}`, f.price, f.currency || "CZK"]);
+  for (const h of S.stays) if (has(h.price)) rows.push(["Ubytování", h.name, h.price, h.currency || "CZK"]);
+  for (const x of S.excursions) if (has(x.price)) rows.push(["Výlety", x.title, x.price, x.currency || "USD"]);
+  for (const c of S.cars) if (has(c.price)) rows.push(["Auto", c.company || c.car || "Půjčení auta", c.price, c.currency || "USD"]);
+  const extra = Array.isArray(S.trip?.extraCosts) ? S.trip.extraCosts : [];
+  for (const e of extra) if (has(e.amount)) rows.push([e.category || "Ostatní", e.label, e.amount, e.currency || "CZK"]);
+  const fees = [...S.prep, ...S.health].filter((i) => has(i.cost));
+  const pays = [];
+  const addPay = (cat, label, item) => { if (item?.payment) pays.push({ cat, label, amount: item.payment.amount ?? item.price, currency: item.payment.currency || item.currency || "CZK", pay: item.payment }); };
+  for (const f of S.flights) addPay("Letenky", f.direction, f);
+  for (const h of S.stays) if (h.status !== "cancelled") addPay("Ubytování", h.name, h);
+  for (const x of S.excursions) addPay("Výlety", x.title, x);
+  for (const c of S.cars) addPay("Auto", c.company || "Půjčení auta", c);
+  pays.sort((a, b) => String(a.pay.dueDate || "9999").localeCompare(String(b.pay.dueDate || "9999")));
+  const payHtml = pays.length ? `<h3 style="font-size:18px;margin:22px 0 10px">Termíny plateb</h3><div class="tbl-wrap"><table><thead><tr><th>Kdy</th><th>Položka</th><th>Stav</th><th style="text-align:right">Částka</th></tr></thead><tbody>${pays.map((p) => `<tr><td class="mono" style="white-space:nowrap">${has(p.pay.dueDate) ? fmtDate(p.pay.dueDate) : "—"}</td><td>${esc(p.label)}<div class="muted" style="font-size:12.5px">${esc(p.cat)}${p.pay.method ? ` · ${esc(p.pay.method)}` : ""}</div></td><td>${paymentPill(p.pay)}</td><td class="num">${has(p.amount) ? fmtMoney(p.amount, p.currency) : "—"}</td></tr>`).join("")}</tbody></table></div>` : "";
+  const feeHtml = payHtml + (fees.length ? `<p class="note" style="margin-top:14px">Poplatky na osobu, které v součtu nejsou: ${fees.map((i) => `${esc(i.title)} (${esc(i.cost)})`).join(" · ")}.</p>` : "");
+  if (!rows.length) { el.innerHTML = (dbState === "ready" ? `<div class="empty"><b>Zatím bez cen.</b> Jakmile u letenek, hotelů nebo výletů bude cena, objeví se tady součet.</div>` : emptyBox("ceny rezervací")) + feeHtml; return; }
+  const totals = {};
+  for (const r of rows) totals[r[3]] = (totals[r[3]] || 0) + Number(r[2]);
+  el.innerHTML = `<div class="totals">${Object.entries(totals).map(([cur, sum]) => `<div class="total"><span class="eyebrow">Celkem ${esc(cur)}</span><b>${fmtMoney(sum, cur)}</b></div>`).join("")}</div>
+    <div class="tbl-wrap"><table><thead><tr><th>Kategorie</th><th>Položka</th><th style="text-align:right">Cena</th></tr></thead><tbody>${rows.map((r) => `<tr><td>${esc(r[0])}</td><td>${esc(r[1])}</td><td class="num">${fmtMoney(r[2], r[3])}</td></tr>`).join("")}</tbody></table></div>${feeHtml}`;
+}
+
+function renderAll() {
+  renderHeader(); renderPlan(); renderFlights(); renderStays(); renderExcursions(); renderCars();
+  renderChecklist("health", HEALTH_GROUPS, "health-body", "informace o očkování");
+  renderChecklist("prep", PREP_GROUPS, "prep-body", "co je potřeba zařídit");
+  renderBudget();
+}
+
+document.addEventListener("click", (e) => {
+  const b = e.target.closest("[data-copy]");
+  if (b) { e.stopPropagation(); copyText(b.dataset.copy, b); }
+}, true);
+
+// Check-off progress lives in the artifact db as plain booleans ({health: {id: true}, prep: {...}}); everything else is in the encrypted vault.
+let progress = {};
+let progressExists = false;
+const LOCAL_PROGRESS = "zanzibar-progress";
+const applyProgress = () => {
+  for (const c of ["health", "prep"]) for (const i of S[c]) i.done = !!progress[c]?.[i.id];
+};
+
+document.addEventListener("change", async (e) => {
+  const cb = e.target.closest("input[type=checkbox][data-coll]");
+  if (!cb) return;
+  const want = cb.checked;
+  const { coll, id } = cb.dataset;
+  if (!db) {
+    progress = { ...progress, [coll]: { ...(progress[coll] || {}), [id]: want } };
+    try { localStorage.setItem(LOCAL_PROGRESS, JSON.stringify(progress)); } catch { toast("Odškrtnutí se v tomto prohlížeči nedá uložit."); }
+    applyProgress(); renderAll();
+    return;
+  }
+  cb.disabled = true;
+  try {
+    const ref = db.doc("progress/checks");
+    if (progressExists) await ref.update({ [coll]: { [id]: want } });
+    else await ref.set({ ...progress, [coll]: { ...(progress[coll] || {}), [id]: want } });
+  } catch (err) {
+    cb.checked = !want;
+    toast(err?.code === "invalid_argument" ? "Tuhle položku nemáte oprávnění měnit." : "Uložení se nepovedlo, zkuste to znovu.");
+  } finally { cb.disabled = false; }
+});
+
+/* ---------- Permanent URL, offline copy, version check ---------- */
+const BUILD = "2026-10-10T18:14:24.784Z";
+const HOME_URL = "https://majerradek.github.io/cestovni-slozka/";
+const MODE = location.href.startsWith(HOME_URL) ? "home" : location.protocol === "file:" ? "file" : window.claude ? "artifact" : "other";
+const fmtBuild = (iso) => { try { return new Intl.DateTimeFormat("cs-CZ", { day: "numeric", month: "numeric", year: "numeric", hour: "2-digit", minute: "2-digit" }).format(new Date(iso)); } catch { return iso; } };
+
+function renderHomeBanners() {
+  const html = MODE === "home" ? "" : MODE === "file"
+    ? `<div>Otevřeno ze staženého souboru, verze z <b>${esc(fmtBuild(BUILD))}</b>. Nejnovější údaje jsou na stálé adrese.</div><div class="acts"><a class="btn" href="${esc(HOME_URL)}" target="_blank" rel="noopener">Otevřít stálou adresu</a></div>`
+    : `<div><b>Tahle stránka neběží ze stálé adresy</b>, a proto bez internetu nefunguje. Otevřete stálou adresu, nebo si stáhněte offline soubor.</div><div class="acts"><a class="btn" href="${esc(HOME_URL)}" target="_blank" rel="noopener">Otevřít stálou adresu</a><button type="button" class="btn ghost" data-download-offline>Stáhnout offline soubor</button></div>`;
+  document.querySelectorAll("[data-home-banner]").forEach((el) => { el.innerHTML = html; el.hidden = !html; });
+}
+
+async function downloadOffline(btn) {
+  const label = btn.textContent;
+  btn.disabled = true; btn.textContent = "Připravuji…";
+  try {
+    const res = await fetch("offline.html", { cache: "no-store" });
+    if (!res.ok) throw new Error("missing");
+    const blob = await res.blob();
+    const downloads = window.claude ? await window.claude.use("downloads") : null;
+    if (downloads) {
+      await downloads.save({ filename: "cestovni-slozka.html", data: blob });
+    } else {
+      const a = document.createElement("a");
+      a.href = URL.createObjectURL(blob); a.download = "cestovni-slozka.html";
+      document.body.appendChild(a); a.click(); a.remove();
+    }
+  } catch (err) {
+    if (err?.code !== "declined") toast(`Stažení se nepovedlo. Otevřete stálou adresu ${HOME_URL}`);
+  } finally { btn.disabled = false; btn.textContent = label; }
+}
+
+function renderOfflineStatus() {
+  const el = document.getElementById("offline-status");
+  if (!el) return;
+  const chips = [`<span class="pill plain">Verze ${esc(fmtBuild(BUILD))}</span>`];
+  if (MODE === "home") {
+    const ready = "serviceWorker" in navigator && navigator.serviceWorker.controller;
+    chips.push(ready ? `<span class="pill ok">Offline připraveno</span>` : `<span class="pill spice">Offline se připravuje, načtěte stránku ještě jednou</span>`);
+  } else chips.push(`<span class="pill warn">Neběží ze stálé adresy, offline nefunguje</span>`);
+  if (!navigator.onLine) chips.push(`<span class="pill spice">Jste offline, zobrazuje se uložená verze</span>`);
+  el.innerHTML = chips.join("");
+  const bl = document.getElementById("build-label");
+  if (bl) bl.textContent = `Verze ${fmtBuild(BUILD)}`;
+}
+
+async function checkForUpdate() {
+  if (MODE !== "home" || !navigator.onLine) return;
+  try {
+    const res = await fetch(`version.json?t=${Date.now()}`, { cache: "no-store" });
+    const v = await res.json();
+    if (v.build && v.build !== BUILD) {
+      document.getElementById("update-text").textContent = `Je k dispozici nová verze stránky z ${fmtBuild(v.build)}.`;
+      document.getElementById("update-bar").hidden = false;
+    }
+  } catch {}
+}
+
+document.addEventListener("click", (e) => {
+  const d = e.target.closest("[data-download-offline]");
+  if (d) downloadOffline(d);
+  if (e.target.closest("#update-btn")) location.reload();
+});
+window.addEventListener("online", () => { renderOfflineStatus(); checkForUpdate(); });
+window.addEventListener("offline", renderOfflineStatus);
+
+if (MODE === "home" && "serviceWorker" in navigator) {
+  navigator.serviceWorker.register("sw.js").then(() => navigator.serviceWorker.ready).then(renderOfflineStatus).catch(() => {});
+  navigator.serviceWorker.addEventListener("controllerchange", renderOfflineStatus);
+  setInterval(checkForUpdate, 15 * 60 * 1000);
+  document.addEventListener("visibilitychange", () => { if (!document.hidden) checkForUpdate(); });
+}
+try {
+  const seen = localStorage.getItem("zanzibar-build");
+  if (seen && seen !== BUILD) setTimeout(() => toast(`Stránka byla aktualizována (verze ${fmtBuild(BUILD)}).`), 600);
+  localStorage.setItem("zanzibar-build", BUILD);
+} catch {}
+renderHomeBanners();
+renderOfflineStatus();
+checkForUpdate();
+
+/* ---------- Vault: AES-GCM, key from PBKDF2-SHA256 ---------- */
+const VAULT = JSON.parse(document.getElementById("vault").textContent);
+const b64d = (s) => Uint8Array.from(atob(s), (c) => c.charCodeAt(0));
+const b64e = (u8) => btoa(String.fromCharCode(...new Uint8Array(u8)));
+const KEY_STORE = "zanzibar-vault-key-" + VAULT.salt.slice(0, 8);
+const store = {
+  get(k) { try { return sessionStorage.getItem(k) || localStorage.getItem(k); } catch { return null; } },
+  set(k, v, remember) { try { sessionStorage.setItem(k, v); if (remember) localStorage.setItem(k, v); } catch {} },
+  clear(k) { try { sessionStorage.removeItem(k); localStorage.removeItem(k); } catch {} },
+};
+
+async function deriveKey(password) {
+  const base = await crypto.subtle.importKey("raw", new TextEncoder().encode(password), "PBKDF2", false, ["deriveKey"]);
+  return crypto.subtle.deriveKey({ name: "PBKDF2", salt: b64d(VAULT.salt), iterations: VAULT.iter, hash: "SHA-256" }, base, { name: "AES-GCM", length: 256 }, true, ["decrypt"]);
+}
+async function openVault(key) {
+  const plain = await crypto.subtle.decrypt({ name: "AES-GCM", iv: b64d(VAULT.iv) }, key, b64d(VAULT.ct));
+  return JSON.parse(new TextDecoder().decode(plain));
+}
+
+function showApp(data) {
+  S.trip = data.trip || null;
+  for (const c of COLLECTIONS) S[c] = (data[c] || []).slice().sort(byOrder);
+  applyProgress();
+  dbState = "ready";
+  document.getElementById("login").hidden = true;
+  document.getElementById("app").hidden = false;
+  renderAll();
+  connectProgress();
+}
+
+async function connectProgress() {
+  try { db = window.claude ? await window.claude.use("db") : null; } catch { db = null; }
+  if (!db) {
+    try { progress = JSON.parse(localStorage.getItem(LOCAL_PROGRESS) || "{}"); } catch { progress = {}; }
+    applyProgress(); renderAll();
+    return;
+  }
+  db.doc("progress/checks").onSnapshot((snap) => {
+    progressExists = snap.exists;
+    progress = snap.exists ? snap.data() : {};
+    applyProgress(); renderAll();
+  }, (err) => console.warn("progress", err?.code));
+}
+
+document.getElementById("login-form").addEventListener("submit", async (e) => {
+  e.preventDefault();
+  const pw = document.getElementById("pw");
+  const btn = document.getElementById("login-btn");
+  const err = document.getElementById("login-err");
+  err.hidden = true; btn.disabled = true; btn.textContent = "Odemykám…";
+  try {
+    const key = await deriveKey(pw.value);
+    const data = await openVault(key);
+    store.set(KEY_STORE, b64e(await crypto.subtle.exportKey("raw", key)), document.getElementById("remember").checked);
+    pw.value = "";
+    showApp(data);
+  } catch {
+    err.hidden = false; pw.select();
+  } finally { btn.disabled = false; btn.textContent = "Odemknout"; }
+});
+
+document.getElementById("logout").addEventListener("click", () => {
+  store.clear(KEY_STORE);
+  S.trip = null; for (const c of COLLECTIONS) S[c] = [];
+  document.getElementById("app").hidden = true;
+  document.getElementById("login").hidden = false;
+  document.getElementById("pw").focus();
+});
+
+(async () => {
+  const saved = store.get(KEY_STORE);
+  if (saved) {
+    try {
+      const key = await crypto.subtle.importKey("raw", b64d(saved), "AES-GCM", false, ["decrypt"]);
+      showApp(await openVault(key));
+      return;
+    } catch { store.clear(KEY_STORE); }
+  }
+  document.getElementById("login").hidden = false;
+  document.getElementById("pw").focus();
+})();
+</script>
+
+</body>
+</html>
